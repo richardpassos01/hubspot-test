@@ -1,0 +1,11 @@
+firstname,lastname,email
+richhhhhhhhhh,richhhhhhhhhh,example+03@hubspot.com
+
+
+
+{
+    data: {
+        
+    },
+    type: 'CONTACT' | 'DEAL'
+}
