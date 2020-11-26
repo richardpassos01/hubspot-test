@@ -20,7 +20,9 @@ const updateContactOnHubspot = async (contacts) => {
     return hubspotClient.crm.contacts.batchApi.update(contacts)
 }
 
-const deleteContactOnHubspot = async (contactsHubspot, contactsMongo, contactLightCollection) => {
+const deleteContactOnHubspot = async (contactsHubspot, contactsMongo) => {
+    const contactLightCollection = await getCollection(); 
+
     const hubspotClient = new hubspot.Client({ apiKey: API_KEY });
 
     const archiveContactsOnHub = await hubspotClient.crm.contacts.batchApi.archive(contactsHubspot);

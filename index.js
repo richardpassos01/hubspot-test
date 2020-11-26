@@ -1,5 +1,4 @@
 const express = require('express');
-const { MongoClient } = require('mongodb');
 const PORT = process.env.PORT;
 
 const {
@@ -8,17 +7,22 @@ const {
     deleteContactOnHubspot,
 } = require('./helper');
 
+const {
+    getCollection,
+} = require('./getCollection');
+
 const app = express();
 app.use(express.json());
 
 app.post('/hubspot/batch', async (req, res) => {
     try {
         const messages = req.body;
+        const contactLightCollection = await getCollection(); 
+
         const customerIds = [];
         const customersToUpdate = {
             inputs: []
         };
-
         const customerToCreate = {
             inputs: []
         };
@@ -27,15 +31,6 @@ app.post('/hubspot/batch', async (req, res) => {
         };
         const customersToDeleteOnMongoDb = [];
 
-        const connection = await MongoClient.connect(process.env.MONGO_URI, {
-            useNewUrlParser: true,
-            useUnifiedTopology: true
-        });
-    
-        const db = await connection.db(process.env.MONGO_DATABASE);
-        const [contactLightCollection] = await Promise.all(
-            ['contact_light'].map(collection => db.collection(collection)),
-        );
 
         if(messages.delete && messages.delete.length) {
             customerIds.push(...messages.delete); 
