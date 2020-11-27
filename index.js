@@ -30,8 +30,7 @@ app.post('/hubspot/batch', async (req, res) => {
             inputs: []
         };
         const customersToDeleteOnMongoDb = [];
-
-
+    
         if(messages.delete && messages.delete.length) {
             customerIds.push(...messages.delete); 
         }
@@ -71,7 +70,7 @@ app.post('/hubspot/batch', async (req, res) => {
 
                 return customerToCreate.inputs.push({
                     properties: customer.properties
-                })
+                });
             });
         }
           
@@ -94,7 +93,6 @@ app.post('/hubspot/batch', async (req, res) => {
             await deleteContactOnHubspot(
                 customersToDeleteOnHubspot,
                 customersToDeleteOnMongoDb,
-                contactLightCollection,
             )
         }
 
