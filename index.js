@@ -11,12 +11,21 @@ const {
     getCollection,
 } = require('./getCollection');
 
+let waitingRateLimitTime = false;
+
 const app = express();
 app.use(express.json());
 
-app.post('/hubspot/batch', async (req, res) => {
+const waitingTimeOutTime = async (milliseconds, message) => {
+    setTimeout(function() {
+        return processMessage(message);
+    }, milliseconds, message);
+}
+
+const processMessage = async (messages) => {
+    waitingRateLimitTime = false;
+
     try {
-        const messages = req.body;
         const contactLightCollection = await getCollection(); 
 
         const customerIds = [];
@@ -26,18 +35,17 @@ app.post('/hubspot/batch', async (req, res) => {
         const customerToCreate = {
             inputs: []
         };
-        const customersToDeleteOnHubspot = {
+        const customersToDelete = {
             inputs: []
         };
-        const customersToDeleteOnMongoDb = [];
-    
+
         if(messages.delete && messages.delete.length) {
             customerIds.push(...messages.delete); 
         }
 
         if(messages.createOrUpdate && messages.createOrUpdate.length) {
             messages.createOrUpdate.forEach(operation => {
-                customerIds.push(operation.id_customer);
+                customerIds.push(operation.properties.id_customer);
             });
         }
 
@@ -59,22 +67,17 @@ app.post('/hubspot/batch', async (req, res) => {
         if(messages.createOrUpdate && messages.createOrUpdate.length) {
             messages.createOrUpdate.forEach((customer) => {
                 const user = usersFromMongoDb.find((mongoUser) => 
-                    mongoUser.id_customer === customer.id_customer);
+                    mongoUser.id_customer === customer.properties.id_customer);
+                
                 if(user) {
                     return customersToUpdate.inputs.push({
                         id: user.hubspotCustomerId,
-                        properties: {
-                            ...customer.properties,
-                            id_customer: customer.id_customer,
-                        }
+                        properties: customer.properties,
                     });
                 }
 
                 return customerToCreate.inputs.push({
-                    properties: {
-                        ...customer.properties,
-                        id_customer: customer.id_customer,
-                    }
+                    properties: customer.properties,
                 });
             });
         }
@@ -85,19 +88,17 @@ app.post('/hubspot/batch', async (req, res) => {
                      mongoUser.id_customer === idCustomer);
 
                 if(user) {
-                    customersToDeleteOnHubspot.inputs.push({
+                    customersToDelete.inputs.push({
                         id: user.hubspotCustomerId,
                     });
-
-                    customersToDeleteOnMongoDb.push(idCustomer);
                 }
             });
         }
 
-        if(customersToDeleteOnHubspot.inputs.length) {
+        if(customersToDelete.inputs.length) {
             await deleteContactOnHubspot(
-                customersToDeleteOnHubspot,
-                customersToDeleteOnMongoDb,
+                customersToDelete,
+                messages.delete,
             )
         }
 
@@ -111,8 +112,19 @@ app.post('/hubspot/batch', async (req, res) => {
 
         res.send(200);
     } catch (error) {
+        waitingRateLimitTime =  true;
         console.error(error)
     }
+}
+
+app.post('/hubspot/batch', async (req, res) => {
+    const messages = req.body;
+
+    if(waitingRateLimitTime) {
+        return waitingTimeOutTime(10000, messages);
+    }
+
+    return processMessage(messages);
 });
 
 app.listen(PORT, () => {
