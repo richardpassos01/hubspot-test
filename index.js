@@ -60,16 +60,21 @@ app.post('/hubspot/batch', async (req, res) => {
             messages.createOrUpdate.forEach((customer) => {
                 const user = usersFromMongoDb.find((mongoUser) => 
                     mongoUser.id_customer === customer.id_customer);
-
                 if(user) {
                     return customersToUpdate.inputs.push({
                         id: user.hubspotCustomerId,
-                        properties: customer.properties
+                        properties: {
+                            ...customer.properties,
+                            id_customer: customer.id_customer,
+                        }
                     });
                 }
 
                 return customerToCreate.inputs.push({
-                    properties: customer.properties
+                    properties: {
+                        ...customer.properties,
+                        id_customer: customer.id_customer,
+                    }
                 });
             });
         }

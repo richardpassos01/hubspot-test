@@ -16,7 +16,7 @@
                 "firstname": "doido",
                 "lastname": "adad",
                 "email": "eittaaaaaaaa2@mastercheff.com",
-                "responsible_operator_email": "abc@chiquitita.com"
+                "responsible_operator_email": "abc@chiquitita.com",
             }
         },
         {
